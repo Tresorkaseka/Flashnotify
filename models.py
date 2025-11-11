@@ -1,16 +1,40 @@
 """
 Modèles de base de données avec SQLAlchemy
-Utilise les descripteurs pour la validation automatique
+Utilise la validation par descripteurs
 """
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
-from core.descriptors import EmailDescriptor, PhoneDescriptor, PriorityDescriptor
+import re
 
 db = SQLAlchemy()
 
 
+def validate_email(email):
+    """Valide le format email (utilise la logique du EmailDescriptor)"""
+    if email and not re.match(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', email):
+        raise ValueError(f"Email invalide : {email}")
+    return email
+
+
+def validate_phone(phone):
+    """Valide le format téléphone international (utilise la logique du PhoneDescriptor)"""
+    if phone:
+        pattern = r'^\+?[1-9]\d{1,14}$'
+        if not re.match(pattern, phone):
+            raise ValueError(f"Numéro de téléphone invalide : {phone}")
+    return phone
+
+
+def validate_priority(priority):
+    """Valide le niveau de priorité (utilise la logique du PriorityDescriptor)"""
+    valid_priorities = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL']
+    if priority and priority.upper() not in valid_priorities:
+        raise ValueError(f"Priorité invalide : {priority}. Valeurs acceptées : {valid_priorities}")
+    return priority.upper() if priority else 'MEDIUM'
+
+
 class User(db.Model):
-    """Modèle utilisateur avec descripteurs pour validation"""
+    """Modèle utilisateur avec validation automatique"""
     __tablename__ = 'users'
     
     id = db.Column(db.Integer, primary_key=True)
@@ -22,30 +46,27 @@ class User(db.Model):
     
     notifications = db.relationship('Notification', backref='user', lazy=True, cascade='all, delete-orphan')
     
-    email = EmailDescriptor()
-    phone = PhoneDescriptor()
-    
     def __init__(self, name, email, phone=None, prefers_email=True):
         self.name = name
-        self.email = email
-        self.phone = phone
+        self._email = validate_email(email)
+        self._phone = validate_phone(phone) if phone else None
         self.prefers_email = prefers_email
     
     @property
-    def _email_value(self):
+    def email(self):
         return self._email
     
-    @_email_value.setter
-    def _email_value(self, value):
-        self._email = value
+    @email.setter
+    def email(self, value):
+        self._email = validate_email(value)
     
     @property
-    def _phone_value(self):
+    def phone(self):
         return self._phone
     
-    @_phone_value.setter
-    def _phone_value(self, value):
-        self._phone = value
+    @phone.setter
+    def phone(self, value):
+        self._phone = validate_phone(value) if value else None
     
     def to_dict(self):
         return {
@@ -74,24 +95,22 @@ class Notification(db.Model):
     status = db.Column(db.String(20), default='sent')
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
-    priority = PriorityDescriptor()
-    
     def __init__(self, user_id, title, body, emergency_type, priority, channels=None, status='sent'):
         self.user_id = user_id
         self.title = title
         self.body = body
         self.emergency_type = emergency_type
-        self.priority = priority
+        self._priority = validate_priority(priority)
         self.channels = channels
         self.status = status
     
     @property
-    def _priority_value(self):
+    def priority(self):
         return self._priority
     
-    @_priority_value.setter
-    def _priority_value(self, value):
-        self._priority = value
+    @priority.setter
+    def priority(self, value):
+        self._priority = validate_priority(value)
     
     def to_dict(self):
         return {
