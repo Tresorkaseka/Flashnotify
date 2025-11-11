@@ -81,6 +81,8 @@ def send_notification():
         
         db.session.commit()
         
+        notifier._performance_metrics.clear()
+        
         flash(f'Notification envoyée avec succès à {user.name} (Priorité: {priority.name})', 'success')
         
     except Exception as e:
