@@ -36,9 +36,14 @@ def add_performance_tracking(cls):
         total = sum(m['duration'] for m in self._performance_metrics)
         return total / len(self._performance_metrics)
     
+    def clear_performance_metrics(self):
+        """Réinitialise les métriques de performance"""
+        self._performance_metrics.clear()
+    
     cls._track_performance = track_performance
     cls.get_performance_metrics = get_performance_metrics
     cls.get_average_performance = get_average_performance
+    cls.clear_performance_metrics = clear_performance_metrics
     
     return cls
 

@@ -54,40 +54,44 @@ def send_notification():
         
         user_dict = user.to_dict()
         
-        notification_data = notifier.notify(user_dict, title, body, emergency_type)
-        
-        priority = get_priority(emergency_type)
-        channels = ', '.join([r['channel'] for r in notification_data['results'] if r])
-        
-        notification = Notification(
-            user_id=user.id,
-            title=title,
-            body=body,
-            emergency_type=emergency_type.value,
-            priority=priority.name,
-            channels=channels,
-            status='sent'
-        )
-        db.session.add(notification)
-        
-        metrics = notifier.get_performance_metrics()
-        for metric in metrics:
-            perf = PerformanceMetric(
-                method_name=metric['method'],
-                duration=metric['duration'],
-                timestamp=metric['timestamp']
+        try:
+            notification_data = notifier.notify(user_dict, title, body, emergency_type)
+            
+            priority = get_priority(emergency_type)
+            channels = ', '.join([r['channel'] for r in notification_data['results'] if r])
+            
+            notification = Notification(
+                user_id=user.id,
+                title=title,
+                body=body,
+                emergency_type=emergency_type.value,
+                priority=priority.name,
+                channels=channels,
+                status='sent'
             )
-            db.session.add(perf)
-        
-        db.session.commit()
-        
-        notifier._performance_metrics.clear()
-        
-        flash(f'Notification envoyée avec succès à {user.name} (Priorité: {priority.name})', 'success')
+            db.session.add(notification)
+            
+            metrics = notifier.get_performance_metrics()
+            for metric in metrics:
+                perf = PerformanceMetric(
+                    method_name=metric['method'],
+                    duration=metric['duration'],
+                    timestamp=metric['timestamp']
+                )
+                db.session.add(perf)
+            
+            db.session.commit()
+            
+            flash(f'Notification envoyée avec succès à {user.name} (Priorité: {priority.name})', 'success')
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Erreur lors de l\'envoi: {str(e)}', 'error')
+        finally:
+            notifier.clear_performance_metrics()
         
     except Exception as e:
-        db.session.rollback()
-        flash(f'Erreur lors de l\'envoi: {str(e)}', 'error')
+        flash(f'Erreur de validation: {str(e)}', 'error')
     
     return redirect(url_for('index'))
 
