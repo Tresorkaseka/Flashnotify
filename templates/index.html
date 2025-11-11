@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+
+{% block title %}Envoyer une Notification{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h2 class="mb-0">📨 Envoyer une Notification</h2>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('send_notification') }}">
+                    <div class="mb-3">
+                        <label for="user_id" class="form-label">Destinataire *</label>
+                        <select class="form-select" id="user_id" name="user_id" required>
+                            <option value="">Sélectionnez un utilisateur...</option>
+                            {% for user in users %}
+                            <option value="{{ user.id }}">
+                                {{ user.name }} - {{ user._email }}
+                                {% if user.prefers_email %}(📧 Email){% else %}(📱 Push){% endif %}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        {% if not users %}
+                        <div class="alert alert-warning mt-2">
+                            Aucun utilisateur trouvé. <a href="{{ url_for('admin') }}">Créez un utilisateur</a> d'abord.
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="emergency_type" class="form-label">Type d'urgence *</label>
+                        <select class="form-select" id="emergency_type" name="emergency_type" required>
+                            {% for type in emergency_types %}
+                            <option value="{{ type }}">
+                                {% if type == 'météo' %}🌩️{% elif type == 'sécurité' %}🚨{% elif type == 'santé' %}🏥{% elif type == 'infrastructure' %}🔧{% else %}📚{% endif %}
+                                {{ type|capitalize }}
+                                {% if type == 'sécurité' or type == 'santé' %}(CRITICAL){% elif type == 'météo' %}(HIGH){% elif type == 'infrastructure' %}(MEDIUM){% else %}(LOW){% endif %}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text">
+                            Le niveau de priorité est déterminé automatiquement selon le type d'urgence.
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="title" class="form-label">Titre *</label>
+                        <input type="text" class="form-control" id="title" name="title" required 
+                               placeholder="Ex: Alerte météo">
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="body" class="form-label">Message *</label>
+                        <textarea class="form-control" id="body" name="body" rows="4" required 
+                                  placeholder="Décrivez votre notification..."></textarea>
+                    </div>
+
+                    <div class="alert alert-info">
+                        <strong>ℹ️ Canaux utilisés :</strong>
+                        <ul class="mb-0 mt-2">
+                            <li><strong>Priorité CRITICAL</strong> : Email + Push + SMS (tous les canaux)</li>
+                            <li><strong>Autres priorités</strong> : Email OU Push selon les préférences utilisateur</li>
+                        </ul>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-lg w-100">
+                        📤 Envoyer la Notification
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div class="card shadow mt-4">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0">🎓 Concepts POO Avancés Utilisés</h5>
+            </div>
+            <div class="card-body">
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item">
+                        <strong>Descripteurs :</strong> Validation automatique des emails et téléphones
+                    </li>
+                    <li class="list-group-item">
+                        <strong>Métaclasses :</strong> Génération automatique de code et enregistrement
+                    </li>
+                    <li class="list-group-item">
+                        <strong>Décorateurs de classes :</strong> Tracking de performance et circuit breaker
+                    </li>
+                    <li class="list-group-item">
+                        <strong>Mixins :</strong> Héritage multiple pour les canaux de communication
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
