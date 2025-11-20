@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}Connexion - Système de Notification{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-4">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white text-center">
+                <h3 class="mb-0">Connexion</h3>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('login') }}" id="loginForm">
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="email" name="email" required
+                               placeholder="Votre adresse email" value="{{ request.form.email if request.form.email }}">
+                    </div>
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Mot de passe</label>
+                        <input type="password" class="form-control" id="password" name="password" required
+                               placeholder="Votre mot de passe">
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">Se connecter</button>
+                    </div>
+                </form>
+
+                <script>
+                document.addEventListener('DOMContentLoaded', function() {
+                    const form = document.getElementById('loginForm');
+                    if (form) {
+                        form.addEventListener('submit', function(e) {
+                            console.log('Formulaire de connexion soumis');
+                            console.log('Email:', document.getElementById('email').value);
+                            console.log('Mot de passe:', document.getElementById('password').value ? '***' : 'vide');
+                        });
+                    }
+                });
+                </script>
+                
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }} mt-3" role="alert">
+                                {{ message }}
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+                
+                <div class="text-center mt-3">
+                    <small class="text-muted">
+                        <strong>Comptes de test :</strong><br>
+                        Admin : admin@flashnotify.local / admin123<br>
+                        Utilisateur : alice.martin@universite.edu / user123
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

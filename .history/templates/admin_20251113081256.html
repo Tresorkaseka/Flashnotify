@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+
+{% block title %}Administration - Utilisateurs{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">👥 Gestion des Utilisateurs</h1>
+
+<div class="row">
+    <div class="col-md-5">
+        <div class="card shadow mb-4">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"> Ajouter un Utilisateur</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('add_user') }}">
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Nom complet *</label>
+                        <input type="text" class="form-control" id="name" name="name" required 
+                               placeholder="Ex: Jean Dupont">
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email *</label>
+                        <input type="email" class="form-control" id="email" name="email" required 
+                               placeholder="jean.dupont@universite.edu">
+                        <div class="form-text">
+                            Validation automatique par descripteur EmailDescriptor
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="phone" class="form-label">Téléphone</label>
+                        <input type="text" class="form-control" id="phone" name="phone" 
+                               placeholder="+33612345678">
+                        <div class="form-text">
+                            Format international requis (validation par PhoneDescriptor)
+                        </div>
+                    </div>
+
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="prefers_email" name="prefers_email" checked>
+                        <label class="form-check-label" for="prefers_email">
+                            Préfère recevoir par email
+                        </label>
+                        <div class="form-text">
+                            Si non coché, préférera les notifications push
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-success w-100">
+                         Ajouter l'Utilisateur
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div class="card shadow">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"> Validation par Descripteurs</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>EmailDescriptor</strong> valide automatiquement :</p>
+                <ul>
+                    <li>Format email standard</li>
+                    <li>Présence de @ et domaine</li>
+                </ul>
+                <p class="mt-3"><strong>PhoneDescriptor</strong> valide :</p>
+                <ul>
+                    <li>Format international</li>
+                    <li>Commence par + (optionnel)</li>
+                    <li>Entre 7 et 15 chiffres</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-7">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"> Liste des Utilisateurs</h5>
+            </div>
+            <div class="card-body">
+                {% if users %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Nom</th>
+                                <th>Email</th>
+                                <th>Téléphone</th>
+                                <th>Canal préféré</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for user in users %}
+                            <tr>
+                                <td>{{ user.name }}</td>
+                                <td>{{ user._email }}</td>
+                                <td>{{ user._phone or '-' }}</td>
+                                <td>
+                                    {% if user.prefers_email %}
+                                        <span class="badge bg-info"> Email</span>
+                                    {% else %}
+                                        <span class="badge bg-warning"> Push</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <form method="POST" action="{{ url_for('delete_user', user_id=user.id) }}" 
+                                          style="display: inline;" 
+                                          onsubmit="return confirm('Supprimer {{ user.name }} ?');">
+                                        <button type="submit" class="btn btn-sm btn-danger">
+                                             Supprimer
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="alert alert-info">
+                    Aucun utilisateur créé. Utilisez le formulaire ci-contre pour en ajouter.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        {% if users %}
+        <div class="card shadow mt-4">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0">Statistiques Utilisateurs</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-4">
+                        <h3>{{ users|length }}</h3>
+                        <p class="text-muted">Total</p>
+                    </div>
+                    <div class="col-md-4">
+                        <h3>{{ users|selectattr('prefers_email')|list|length }}</h3>
+                        <p class="text-muted">Préfèrent Email</p>
+                    </div>
+                    <div class="col-md-4">
+                        <h3>{{ users|rejectattr('prefers_email')|list|length }}</h3>
+                        <p class="text-muted">Préfèrent Push</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

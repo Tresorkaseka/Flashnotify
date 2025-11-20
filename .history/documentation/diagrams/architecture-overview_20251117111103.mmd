@@ -1,0 +1,45 @@
+graph TD
+    subgraph "Frontend"
+        A[Interface Web] --> B[Routes Flask]
+        C[API FastAPI] --> D[Routes FastAPI]
+    end
+
+    subgraph "Backend Flask"
+        B --> E[send_notification]
+        E --> F[ThreadPoolQueue]
+        F --> G[send_notification_sync]
+        G --> H[AcademicNotifier]
+        H --> I[EmailMixin]
+        H --> J[SMSMixin]
+        H --> K[PushNotificationMixin]
+        H --> L[ArchiveMixin]
+    end
+
+    subgraph "Backend FastAPI"
+        D --> M[API Routes]
+        M --> N[NotificationService]
+        N --> O[Database]
+    end
+
+    subgraph "Database"
+        O --> P[User Table]
+        O --> Q[Notification Table]
+        O --> R[PerformanceMetric Table]
+    end
+
+    subgraph "External Services"
+        I --> S[SMTP Server]
+        J --> T[Twilio API]
+        K --> U[Push Service]
+    end
+
+    subgraph "Authentification"
+        V[Auth System] --> W[JWT]
+        V --> X[API Key]
+        V --> Y[Session]
+    end
+
+    B -.-> V
+    D -.-> V
+    G -.-> O
+    L -.-> O

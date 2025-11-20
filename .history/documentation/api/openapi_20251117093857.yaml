@@ -1,0 +1,702 @@
+openapi: 3.0.3
+info:
+  title: FlashNotify API
+  description: |
+    API moderne pour le système de notification académique FlashNotify.
+    
+    Cette API permet la gestion des utilisateurs, l'envoi de notifications et la consultation des statistiques.
+    
+    ## Fonctionnalités principales
+    - Gestion des utilisateurs avec préférences
+    - Envoi de notifications multi-canaux (Email, SMS, Push)
+    - Statistiques et métriques de performance
+    - Authentification sécurisée
+    
+    ## Authentification
+    Tous les endpoints (sauf `/health`) nécessitent une authentification Bearer token.
+    Les clés API sont générées automatiquement pour l'admin et l'utilisateur.
+  version: 2.0.0
+  contact:
+    name: Support FlashNotify
+    email: support@flashnotify.fr
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:8000
+    description: Serveur de développement
+  - url: https://api.flashnotify.fr
+    description: Serveur de production
+
+security:
+  - Bearer: []
+
+tags:
+  - name: Utilisateurs
+    description: Gestion des utilisateurs du système
+  - name: Notifications
+    description: Envoi et gestion des notifications
+  - name: Statistiques
+    description: Statistiques et métriques du système
+  - name: Performance
+    description: Métriques de performance
+  - name: Santé
+    description: Vérifications de santé du système
+
+paths:
+  /api/v2/health/:
+    get:
+      tags:
+        - Santé
+      summary: Vérification de santé
+      description: |
+        Endpoint de vérification de santé de l'API.
+        Ne nécessite pas d'authentification.
+      operationId: health_check_api_v2_health_get
+      responses:
+        '200':
+          description: Service en bonne santé
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "healthy"
+                  timestamp:
+                    type: string
+                    format: date-time
+                  version:
+                    type: string
+                    example: "2.0.0"
+                  services:
+                    type: object
+                    properties:
+                      database:
+                        type: string
+                        example: "connected"
+                      notification_system:
+                        type: string
+                        example: "active"
+
+  /api/v2/users/:
+    post:
+      tags:
+        - Utilisateurs
+      summary: Créer un utilisateur
+      description: |
+        Crée un nouvel utilisateur dans le système avec ses préférences.
+        
+        ## Données requises
+        - name: Nom complet de l'utilisateur
+        - email: Adresse email valide
+        - phone: Numéro de téléphone (optionnel)
+        - prefers_email: Préférence de canal (par défaut: true)
+      operationId: create_user_api_v2_users_post
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserCreate'
+      responses:
+        '200':
+          description: Utilisateur créé avec succès
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    get:
+      tags:
+        - Utilisateurs
+      summary: Lister les utilisateurs
+      description: |
+        Récupère la liste paginée des utilisateurs avec options de pagination.
+        
+        ## Paramètres de pagination
+        - skip: Nombre d'enregistrements à ignorer (défaut: 0)
+        - limit: Nombre maximum de résultats (défaut: 100, max: 1000)
+      operationId: get_users_api_v2_users_get
+      parameters:
+        - name: skip
+          in: query
+          description: Nombre d'enregistrements à ignorer
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+        - name: limit
+          in: query
+          description: Nombre maximum de résultats
+          schema:
+            type: integer
+            default: 100
+            minimum: 1
+            maximum: 1000
+      responses:
+        '200':
+          description: Liste des utilisateurs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v2/users/{user_id}/:
+    get:
+      tags:
+        - Utilisateurs
+      summary: Récupérer un utilisateur
+      description: |
+        Récupère les détails d'un utilisateur spécifique par son ID.
+      operationId: get_user_api_v2_users__user_id__get
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          description: ID unique de l'utilisateur
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        '200':
+          description: Détails de l'utilisateur
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v2/notifications/:
+    post:
+      tags:
+        - Notifications
+      summary: Envoyer une notification
+      description: |
+        Envoie une notification à un utilisateur basé sur son email.
+        
+        ## Types d'urgence supportés
+        - académique: Notifications normales (priorité basse)
+        - météo: Alertes météo (priorité haute)
+        - sécurité: Alertes de sécurité (priorité critique)
+        - santé: Alertes santé (priorité critique)
+        - infrastructure: Alertes infrastructure (priorité moyenne)
+        
+        ## Logique de distribution
+        - **Priorité critique** (sécurité/santé): Envoi sur tous les canaux disponibles
+        - **Priorité haute** (météo): Email + SMS
+        - **Priorité moyenne/basse**: Canal préféré de l'utilisateur
+      operationId: send_notification_api_v2_notifications_post
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NotificationRequest'
+      responses:
+        '200':
+          description: Notification envoyée avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Notification envoyée avec succès"
+                  notification_data:
+                    $ref: '#/components/schemas/NotificationData'
+                  notification_id:
+                    type: integer
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Utilisateur non trouvé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                detail: "Utilisateur non trouvé"
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    get:
+      tags:
+        - Notifications
+      summary: Lister les notifications
+      description: |
+        Récupère la liste paginée des notifications avec filtres optionnels.
+        
+        ## Filtres disponibles
+        - emergency_type: Filtrer par type d'urgence
+        - priority: Filtrer par niveau de priorité
+      operationId: get_notifications_api_v2_notifications_get
+      parameters:
+        - name: skip
+          in: query
+          description: Nombre d'enregistrements à ignorer
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+        - name: limit
+          in: query
+          description: Nombre maximum de résultats
+          schema:
+            type: integer
+            default: 100
+            minimum: 1
+            maximum: 1000
+        - name: emergency_type
+          in: query
+          description: Filtrer par type d'urgence
+          schema:
+            type: string
+            enum: [académique, météo, sécurité, santé, infrastructure]
+        - name: priority
+          in: query
+          description: Filtrer par priorité
+          schema:
+            type: string
+            enum: [LOW, MEDIUM, HIGH, CRITICAL]
+      responses:
+        '200':
+          description: Liste des notifications
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/NotificationResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v2/notifications/{notification_id}/:
+    get:
+      tags:
+        - Notifications
+      summary: Récupérer une notification
+      description: |
+        Récupère les détails d'une notification spécifique par son ID.
+      operationId: get_notification_api_v2_notifications__notification_id__get
+      parameters:
+        - name: notification_id
+          in: path
+          required: true
+          description: ID unique de la notification
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        '200':
+          description: Détails de la notification
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v2/stats/:
+    get:
+      tags:
+        - Statistiques
+      summary: Statistiques du système
+      description: |
+        Récupère les statistiques complètes du système de notification.
+        
+        ## Données retournées
+        - total_notifications: Nombre total de notifications
+        - total_users: Nombre total d'utilisateurs
+        - by_type: Répartition par type d'urgence
+        - by_priority: Répartition par priorité
+        - recent_notifications: 10 notifications les plus récentes
+      operationId: get_stats_api_v2_stats_get
+      responses:
+        '200':
+          description: Statistiques du système
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatsResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v2/performance/:
+    get:
+      tags:
+        - Performance
+      summary: Métriques de performance
+      description: |
+        Récupère les métriques de performance des canaux de notification.
+        
+        ## Données incluses
+        - Temps d'exécution par méthode
+        - Taux de succès/échec
+        - Métriques par canal (Email, SMS, Push)
+        - Historique des 100 dernières opérations
+      operationId: get_performance_metrics_api_v2_performance_get
+      responses:
+        '200':
+          description: Métriques de performance
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PerformanceMetricsResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+components:
+  schemas:
+    UserCreate:
+      type: object
+      required:
+        - name
+        - email
+      properties:
+        name:
+          type: string
+          description: Nom complet de l'utilisateur
+          minLength: 1
+          maxLength: 100
+          example: "Jean Dupont"
+        email:
+          type: string
+          format: email
+          description: Adresse email valide
+          example: "jean.dupont@universite.fr"
+        phone:
+          type: string
+          description: Numéro de téléphone international
+          pattern: '^[\+]?[1-9][\d]{0,15}$'
+          example: "+33123456789"
+        prefers_email:
+          type: boolean
+          description: Préférence pour les notifications par email
+          default: true
+          example: true
+
+    UserResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: ID unique de l'utilisateur
+          example: 123
+        name:
+          type: string
+          description: Nom complet de l'utilisateur
+          example: "Jean Dupont"
+        email:
+          type: string
+          format: email
+          description: Adresse email de l'utilisateur
+          example: "jean.dupont@universite.fr"
+        phone:
+          type: string
+          description: Numéro de téléphone
+          example: "+33123456789"
+        prefers_email:
+          type: boolean
+          description: Préférence de canal
+          example: true
+        created_at:
+          type: string
+          format: date-time
+          description: Date de création
+          example: "2025-11-17T09:37:00Z"
+
+    NotificationRequest:
+      type: object
+      required:
+        - user_email
+        - title
+        - body
+      properties:
+        user_email:
+          type: string
+          format: email
+          description: Email de l'utilisateur destinataire
+          example: "jean.dupont@universite.fr"
+        title:
+          type: string
+          description: Titre de la notification
+          minLength: 1
+          maxLength: 200
+          example: "Alerte Météo"
+        body:
+          type: string
+          description: Contenu de la notification
+          minLength: 1
+          maxLength: 1000
+          example: "Fortes pluies prévues dans les prochaines heures."
+        emergency_type:
+          type: string
+          description: Type d'urgence
+          enum: [académique, météo, sécurité, santé, infrastructure]
+          default: académique
+          example: "météo"
+
+    NotificationResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: ID unique de la notification
+          example: 456
+        user_id:
+          type: integer
+          description: ID de l'utilisateur destinataire
+          example: 123
+        title:
+          type: string
+          description: Titre de la notification
+          example: "Alerte Météo"
+        body:
+          type: string
+          description: Contenu de la notification
+          example: "Fortes pluies prévues dans les prochaines heures."
+        emergency_type:
+          type: string
+          description: Type d'urgence
+          enum: [académique, météo, sécurité, santé, infrastructure]
+          example: "météo"
+        priority:
+          type: string
+          description: Niveau de priorité
+          enum: [LOW, MEDIUM, HIGH, CRITICAL]
+          example: "HIGH"
+        channels:
+          type: string
+          description: Canaux utilisés pour l'envoi
+          example: "Email, SMS"
+        status:
+          type: string
+          description: Statut d'envoi
+          enum: [sent, failed, pending]
+          example: "sent"
+        created_at:
+          type: string
+          format: date-time
+          description: Date de création
+          example: "2025-11-17T09:37:00Z"
+
+    NotificationData:
+      type: object
+      properties:
+        user_id:
+          type: integer
+          description: ID de l'utilisateur
+          example: 123
+        title:
+          type: string
+          description: Titre de la notification
+          example: "Alerte Météo"
+        body:
+          type: string
+          description: Contenu de la notification
+          example: "Fortes pluies prévues dans les prochaines heures."
+        emergency_type:
+          type: string
+          description: Type d'urgence
+          example: "météo"
+        priority:
+          type: string
+          description: Priorité calculée
+          example: "HIGH"
+        results:
+          type: array
+          description: Résultats d'envoi par canal
+          items:
+            type: object
+            properties:
+              status:
+                type: string
+                enum: [success, failure]
+                example: "success"
+              channel:
+                type: string
+                enum: [Email, SMS, Push]
+                example: "Email"
+              recipient:
+                type: string
+                description: Destinataire
+                example: "jean.dupont@universite.fr"
+              message:
+                type: string
+                description: Message envoyé
+                example: "[MÉTÉO] Alerte Météo\nFortes pluies prévues dans les prochaines heures."
+
+    StatsResponse:
+      type: object
+      properties:
+        total_notifications:
+          type: integer
+          description: Nombre total de notifications
+          example: 1250
+        total_users:
+          type: integer
+          description: Nombre total d'utilisateurs
+          example: 150
+        by_type:
+          type: object
+          description: Répartition par type d'urgence
+          properties:
+            académique:
+              type: integer
+              example: 800
+            météo:
+              type: integer
+              example: 200
+            sécurité:
+              type: integer
+              example: 150
+            santé:
+              type: integer
+              example: 75
+            infrastructure:
+              type: integer
+              example: 25
+        by_priority:
+          type: object
+          description: Répartition par priorité
+          properties:
+            LOW:
+              type: integer
+              example: 400
+            MEDIUM:
+              type: integer
+              example: 500
+            HIGH:
+              type: integer
+              example: 300
+            CRITICAL:
+              type: integer
+              example: 50
+        recent_notifications:
+          type: array
+          description: 10 notifications les plus récentes
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+                example: 1245
+              title:
+                type: string
+                example: "Fermeture bibliothèque"
+              emergency_type:
+                type: string
+                example: "académique"
+              created_at:
+                type: string
+                format: date-time
+                example: "2025-11-17T09:30:00Z"
+
+    PerformanceMetricsResponse:
+      type: object
+      properties:
+        method_name:
+          type: string
+          description: Nom de la méthode mesurée
+          example: "send_email"
+        duration:
+          type: number
+          format: float
+          description: Durée d'exécution en secondes
+          example: 0.125
+        timestamp:
+          type: string
+          format: date-time
+          description: Timestamp de la mesure
+          example: "2025-11-17T09:37:00Z"
+        channel:
+          type: string
+          description: Canal associé (optionnel)
+          example: "Email"
+
+    Error:
+      type: object
+      properties:
+        detail:
+          type: string
+          description: Description de l'erreur
+          example: "Une erreur s'est produite"
+
+  responses:
+    BadRequest:
+      description: Requête invalide
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            detail: "Données de requête invalides"
+
+    Unauthorized:
+      description: Non autorisé - Token invalide ou manquant
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            detail: "Token invalide"
+
+    NotFound:
+      description: Ressource non trouvée
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            detail: "Ressource non trouvée"
+
+    InternalServerError:
+      description: Erreur interne du serveur
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            detail: "Erreur interne du serveur"
+
+  securitySchemes:
+    Bearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        Token d'authentification Bearer JWT.
+        
+        ## Comment obtenir un token
+        1. Contactez l'administrateur pour obtenir vos clés API
+        2. Utilisez la clé dans l'en-tête Authorization: Bearer <token>
+        
+        ## Format
+        ```
+        Authorization: Bearer sk-admin-abc123def456...
+        ```
+
+externalDocs:
+  description: Documentation complète FlashNotify
+  url: https://docs.flashnotify.fr

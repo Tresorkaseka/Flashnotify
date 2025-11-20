@@ -7,7 +7,7 @@
     <div class="col-lg-8 mx-auto">
         <div class="card shadow">
             <div class="card-header bg-primary text-white">
-                <h2 class="mb-0">📨 Envoyer une Notification</h2>
+                <h2 class="mb-0"> Envoyer une Notification</h2>
             </div>
             <div class="card-body">
                 <form method="POST" action="{{ url_for('send_notification') }}">
@@ -18,7 +18,7 @@
                             {% for user in users %}
                             <option value="{{ user.id }}">
                                 {{ user.name }} - {{ user._email }}
-                                {% if user.prefers_email %}(📧 Email){% else %}(📱 Push){% endif %}
+                                {% if user.prefers_email %}( Email){% else %}(📱 Push){% endif %}
                             </option>
                             {% endfor %}
                         </select>
@@ -58,7 +58,7 @@
                     </div>
 
                     <div class="alert alert-info">
-                        <strong>ℹ️ Canaux utilisés :</strong>
+                        <strong> Canaux utilisés :</strong>
                         <ul class="mb-0 mt-2">
                             <li><strong>Priorité CRITICAL</strong> : Email + Push + SMS (tous les canaux)</li>
                             <li><strong>Autres priorités</strong> : Email OU Push selon les préférences utilisateur</li>
@@ -66,7 +66,7 @@
                     </div>
 
                     <button type="submit" class="btn btn-primary btn-lg w-100">
-                        📤 Envoyer la Notification
+                         Envoyer la Notification
                     </button>
                 </form>
             </div>
@@ -74,7 +74,7 @@
 
         <div class="card shadow mt-4">
             <div class="card-header bg-secondary text-white">
-                <h5 class="mb-0">🎓 Concepts POO Avancés Utilisés</h5>
+                <h5 class="mb-0">Concepts POO Avancés Utilisés</h5>
             </div>
             <div class="card-body">
                 <ul class="list-group list-group-flush">

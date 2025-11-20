@@ -1,0 +1,40 @@
+sequenceDiagram
+    participant User as Utilisateur
+    participant Flask as App Flask
+    participant Queue as ThreadPoolQueue
+    participant Worker as Worker Thread
+    participant Notifier as AcademicNotifier
+    participant DB as Base de Données
+    participant Email as Service Email
+    participant SMS as Service SMS
+    participant Push as Service Push
+    
+    User->>Flask: POST /send_notification
+    Flask->>Queue: Enqueue notification
+    Queue->>Worker: Process in thread
+    
+    Worker->>Notifier: notify(user, title, body, type)
+    Notifier->>Notifier: Determine priority
+    Notifier->>Notifier: Format message
+    
+    alt Critical Priority
+        Notifier->>Email: send_email(message, email)
+        Email-->>Notifier: Success/Failure
+        Notifier->>SMS: send_sms(message, phone)
+        SMS-->>Notifier: Success/Failure
+        Notifier->>Push: send_push(message, user_id)
+        Push-->>Notifier: Success/Failure
+    else Normal Priority
+        alt User prefers email
+            Notifier->>Email: send_email(message, email)
+        else
+            Notifier->>Push: send_push(message, user_id)
+        end
+    end
+    
+    Notifier->>DB: archive_notification()
+    DB-->>Notifier: notification_id
+    Notifier-->>Worker: notification_data
+    Worker-->>Queue: Complete
+    Queue-->>Flask: Success response
+    Flask-->>User: Response

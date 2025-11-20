@@ -1,0 +1,46 @@
+# Utilisation d'une image Python officielle
+FROM python:3.11-slim
+
+# Définition des variables d'environnement
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    FLASK_APP=app.py \
+    FASTAPI_PORT=8000 \
+    FLASK_PORT=500
+
+# Définition du répertoire de travail
+WORKDIR /app
+
+# Copie des fichiers de dépendances
+COPY requirements.txt .
+
+# Installation des dépendances
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
+
+# Installation de psycopg2 (nécessite des dépendances système)
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        gcc \
+        postgresql-server-dev-all \
+        musl-dev \
+        libffi-dev && \
+    if [ -d /var/lib/apt/lists ]; then rm -rf /var/lib/apt/lists/*; fi
+
+# Réinstallation de psycopg2-binary pour résoudre les problèmes de compilation
+RUN pip uninstall -y psycopg2-binary && \
+    pip install psycopg2-binary
+
+# Copie du reste des fichiers de l'application
+COPY . .
+
+# Création d'un utilisateur non root pour des raisons de sécurité
+RUN adduser --disabled-password --gecos '' appuser && \
+    chown -R appuser:appuser /app
+USER appuser
+
+# Exposition des ports
+EXPOSE 5000 8000
+
+# Commande par défaut pour lancer l'application
+CMD ["sh", "-c", "python -c 'from app import init_db; init_db()' && python run_fastapi.py"]

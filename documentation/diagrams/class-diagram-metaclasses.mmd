@@ -1,0 +1,66 @@
+classDiagram
+    class NotificationMeta {
+        <<metaclass>>
+        +__new__(mcs, name, bases, namespace)
+        +__init__(cls, name, bases, namespace)
+        +create_validators()
+        +register_notifier()
+    }
+    
+    class ChannelMeta {
+        <<metaclass>>
+        +__new__(mcs, name, bases, namespace)
+        +register_channel()
+    }
+    
+    class TemplateMeta {
+        <<metaclass>>
+        +__new__(mcs, name, bases, namespace)
+        +generate_template()
+    }
+    
+    class ConfigMeta {
+        <<metaclass>>
+        +__new__(mcs, name, bases, namespace)
+        +validate_config()
+    }
+    
+    %% Relations avec les classes
+    NotificationMeta --> AcademicNotifier : creates
+    ChannelMeta --> SMSMixin : validates
+    ChannelMeta --> EmailMixin : validates
+    ChannelMeta --> PushNotificationMixin : validates
+    
+    class AcademicNotifier {
+        <<class>>
+        +__init__()
+        +notify(user, title, body, emergency_type) dict
+        +send_all_channels(message, user) list
+        +_notification_type: str
+        +required_fields: list
+        +description: str
+    }
+    
+    class SMSMixin {
+        <<mixin>>
+        +send_sms(message, number) dict
+        +channel_type: str
+    }
+    
+    class EmailMixin {
+        <<mixin>>
+        +send_email(message, email) dict
+        +channel_type: str
+    }
+    
+    class PushNotificationMixin {
+        <<mixin>>
+        +send_push(message, user_id) dict
+        +channel_type: str
+    }
+    
+    %% Application des métaclasses
+    AcademicNotifier --|> NotificationMeta : uses metaclass
+    SMSMixin --|> ChannelMeta : uses metaclass
+    EmailMixin --|> ChannelMeta : uses metaclass
+    PushNotificationMixin --|> ChannelMeta : uses metaclass

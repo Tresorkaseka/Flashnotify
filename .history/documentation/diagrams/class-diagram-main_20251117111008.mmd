@@ -1,0 +1,59 @@
+classDiagram
+    %% Mixins - Composants réutilisables
+    class SMSMixin {
+        <<mixin>>
+        -channel_type: str
+        +send_sms(message, number) dict
+        +log_notification(func)
+        +retry_on_failure(retries)
+    }
+    
+    class EmailMixin {
+        <<mixin>>
+        -channel_type: str
+        +send_email(message, email) dict
+        +log_notification(func)
+        +retry_on_failure(retries)
+    }
+    
+    class PushNotificationMixin {
+        <<mixin>>
+        -channel_type: str
+        +send_push(message, user_id) dict
+        +log_notification(func)
+        +retry_on_failure(retries)
+    }
+    
+    class FormattingMixin {
+        <<mixin>>
+        +format_message(title, body, emergency_type) str
+    }
+    
+    class ArchiveMixin {
+        <<mixin>>
+        +archive_notification(notification_data) dict
+    }
+    
+    class UserPreferenceMixin {
+        <<mixin>>
+        +prefers_email(user) bool
+    }
+    
+    %% Notificateur Principal
+    class AcademicNotifier {
+        +__init__()
+        +send_all_channels(message, user) list
+        +notify(user, title, body, emergency_type) dict
+        -_notification_type: str
+        -is_circuit_open() bool
+        -record_success()
+        -record_failure()
+    }
+    
+    %% Héritage Multiple
+    AcademicNotifier --> SMSMixin : inherits
+    AcademicNotifier --> EmailMixin : inherits
+    AcademicNotifier --> PushNotificationMixin : inherits
+    AcademicNotifier --> FormattingMixin : inherits
+    AcademicNotifier --> ArchiveMixin : inherits
+    AcademicNotifier --> UserPreferenceMixin : inherits
