@@ -42,7 +42,7 @@ API_KEYS = {
     "user": secrets.token_hex(16)
 }
 
-def verify_token(credentials: HTTPBearer = Security(security)):
+def verify_token(credentials: HTTPAuthorizationScheme = Depends(security)):
     """Vérifie le token d'authentification"""
     if credentials.credentials not in API_KEYS.values():
         raise HTTPException(
