@@ -461,25 +461,12 @@ if __name__ == '__main__':
         shutdown_queues()
 else:
     # Production mode (Gunicorn)
-    # Auto-initialize DB if needed (for Render/Heroku ephemeral FS)
+    # Auto-initialize DB and Queues
     with app.app_context():
         try:
-            db.create_all()
-            if User.query.first() is None:
-                print("Initializing database with default data...")
-                # Create admin user if not exists
-                if not User.query.filter_by(email='admin@flashnotify.local').first():
-                    admin_user = User(
-                        name='Admin User',
-                        email='admin@flashnotify.local',
-                        phone=None,
-                        role='admin',
-                        prefers_email=True
-                    )
-                    admin_user._password = auth_manager.hash_password('admin123')
-                    db.session.add(admin_user)
-                    db.session.commit()
-                    print("Admin user created.")
+            init_db()
+            init_queues()
+            print("Production initialization completed: DB and Queues ready.")
         except Exception as e:
-            print(f"Error initializing database: {e}")
+            print(f"Error initializing application: {e}")
 
