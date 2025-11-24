@@ -139,50 +139,20 @@ class AuthManager:
         """Authentifie un utilisateur"""
         try:
             print(f"Recherche d'utilisateur avec email: {email}")
-            print(f"Type de l'email: {type(email)}")
-            print(f"Longueur de l'email: {len(email) if email else 0}")
-            print(f"Email en minuscules: {email.lower()}")
             
-            # Essayons d'abord avec filter_by
-            user = User.query.filter_by(email=email).first()
-            print(f"Résultat de filter_by: {user is not None}")
+            # Utilisation de filter sur la colonne _email
+            user = User.query.filter(User._email == email).first()
             
             if not user:
-                # Essayons avec une recherche avec LIKE pour voir si c'est un problème de casse ou d'espaces
+                # Recherche insensible à la casse
                 user = User.query.filter(User._email.ilike(email)).first()
-                print(f"Résultat de filter avec ilike: {user is not None}")
-                
-                if not user:
-                    # Finalement, essayons de récupérer tous les utilisateurs pour voir exactement ce qui est stocké
-                    print("Liste complète des emails dans la base :")
-                    all_users = User.query.all()
-                    for u in all_users:
-                        print(f"  - '{u.email}' (longueur: {len(u.email)})")
-                        print(f"    Correspondance exacte: '{u.email}' == '{email}' -> {u.email == email}")
-                
-                if not user:
-                    # Essayons avec une recherche exacte de tous les utilisateurs pour déboguer
-                    all_users = User.query.all()
-                    print(f"Total des utilisateurs dans la base: {len(all_users)}")
-                    for u in all_users:
-                        print(f" - {repr(u.email)} (id: {u.id})")
-                        print(f"    Correspondance exacte: {u.email == email}")
-                        print(f"    Correspondance lower: {u.email.lower() == email.lower()}")
             
             if user:
                 print(f"Utilisateur trouvé: {user.email}, Role: {user.role}")
-                print(f"Mot de passe dans la base (hash): {user._password[:10]}..." if user._password else "Mot de passe vide")
-                # Hacher le mot de passe fourni pour comparaison
-                input_password_hash = self.hash_password(password)
-                print(f"Mot de passe saisi hashé: {input_password_hash[:10]}...")
-                
-                # Récupérer le mot de passe haché directement via l'attribut _password
+                # Récupérer le mot de passe haché
                 stored_password = user._password
-                print(f"Type du mot de passe stocké: {type(stored_password)}")
-                print(f"Longueur du mot de passe stocké: {len(stored_password) if stored_password else 0}")
                 
                 passwords_match = self.verify_password(password, stored_password)
-                print(f"Comparaison des mots de passe: {passwords_match}")
                 
                 if passwords_match:
                     print("Authentification réussie!")

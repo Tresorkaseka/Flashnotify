@@ -190,14 +190,16 @@ def add_user():
     try:
         name = request.form.get('name')
         email = request.form.get('email')
+        password = request.form.get('password')
         phone = request.form.get('phone', '')
         prefers_email = request.form.get('prefers_email') == 'on'
         
-        if not all([name, email]):
-            flash('Le nom et l\'email sont requis', 'error')
+        if not all([name, email, password]):
+            flash('Le nom, l\'email et le mot de passe sont requis', 'error')
             return redirect(url_for('admin'))
         
         user = User(name=name, email=email, phone=phone if phone else None, prefers_email=prefers_email)
+        user._password = auth_manager.hash_password(password)
         db.session.add(user)
         db.session.commit()
         
