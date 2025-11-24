@@ -348,11 +348,11 @@ class ThreadPoolQueue:
             
             self.tasks[task_id] = task
             self.queue.put(task_id)
-            
-            logging.info(f"Tâche {task_id} ajoutée à la file ThreadPool")
-            return task_id
-
-
+                        await self.queue.put((-1, task_id))
+                        logging.warning(f"Worker {worker_id} - Tâche {task_id} échouée, nouvelle tentative ({task.retry_count}/{task.max_retries})")
+                    else:
+                        task.status = TaskStatus.FAILED
+                        task.completed_at = datetime.now()
                         logging.error(f"Worker {worker_id} - Tâche {task_id} échouée définitivement après {task.max_retries} tentatives")
                 
                 finally:
@@ -566,6 +566,7 @@ def _run_async_loop(loop):
         loop.close()
         logging.info("Boucle asyncio arrêtée")
 
+
 def init_queues():
     """Initialise les files d'attente"""
     # Démarrage de la file d'attente ThreadPool
@@ -585,6 +586,5 @@ def shutdown_queues():
     thread_pool_queue.stop()
     
     # Note: La boucle asyncio s'arrêtera avec le thread daemon
-    # ou on pourrait implémenter un mécanisme d'arrêt plus propre si nécessaire
     
     logging.info("Files d'attente arrêtées")
