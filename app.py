@@ -466,7 +466,7 @@ else:
         try:
             init_db()
             init_queues()
-            print("Production initialization completed: DB and Queues ready.")
+            print("Production initialization completed: DB and Queues ready.", flush=True)
         except Exception as e:
-            print(f"Error initializing application: {e}")
+            print(f"Error initializing application: {e}", flush=True)
 
